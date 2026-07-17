@@ -86,11 +86,6 @@ El proyecto se apoya en:
 
 ---
 
-## 📸 Evidencia
-(Espacio para incluir capturas de pantalla del juego en funcionamiento)
-
----
-
 ## 📖 Bibliografía
 - Montero Miguel, R. (2014). *Desarrollo de aplicaciones para Android*. RA-MA Editorial.  
 - Nolasco Valenzuela, J. S. (2019). *Desarrollo de aplicaciones con Android*. RA-MA Editorial.  
