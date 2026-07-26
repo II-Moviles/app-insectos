@@ -13,6 +13,10 @@ interface Puntaje {
 
   puntaje: number;
 
+  capturas: number;
+
+  partidas: number;
+
   fecha: string;
 }
 
@@ -45,9 +49,18 @@ export default function ScoreScreen() {
 
               <Text style={styles.usuario}>Jugador: {item.usuario}</Text>
 
-              <Text style={styles.score}>Puntaje: {item.puntaje}</Text>
+              <Text style={styles.text}>Puntaje: {item.puntaje}</Text>
 
-              <Text style={styles.fecha}>{item.fecha}</Text>
+              <Text style={styles.text}>
+                Insectos capturados: {item.capturas}
+              </Text>
+
+              <Text style={styles.text}>Partidas jugadas: {item.partidas}</Text>
+
+              <Text style={styles.fecha}>
+                Fecha:
+                {new Date(item.fecha).toLocaleDateString()}
+              </Text>
             </View>
           )}
         />
@@ -107,10 +120,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
 
     fontWeight: "bold",
+
+    marginTop: 5,
   },
 
-  score: {
-    fontSize: 17,
+  text: {
+    fontSize: 16,
 
     marginTop: 5,
   },
@@ -120,6 +135,6 @@ const styles = StyleSheet.create({
 
     color: "#666",
 
-    marginTop: 5,
+    marginTop: 8,
   },
 });

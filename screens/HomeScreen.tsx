@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
@@ -17,6 +18,8 @@ import { homeStyles } from "../styles/ScreensStyles";
 import { Insect } from "../types/Insect";
 
 import { guardarPuntaje } from "../supabase/puntajes";
+
+import { obtenerPerfil } from "../Services/auth";
 
 interface GameInsect extends Insect {
   x: number;
@@ -39,17 +42,15 @@ export default function HomeScreen({ navigation }: Props) {
 
   const [capturas, setCapturas] = useState<number>(0);
 
-  const [jugador, setJugador] = useState<string>("Jugador");
+  const [jugador, setJugador] = useState<string>("");
 
   const scale = useRef(new Animated.Value(0)).current;
-
-  // Generar ID único
 
   const generarId = () => {
     return Date.now().toString() + Math.random().toString(36).substring(2);
   };
 
-  // Cargar jugador guardado
+  // Cargar nickname del usuario
 
   useEffect(() => {
     cargarJugador();
@@ -57,15 +58,15 @@ export default function HomeScreen({ navigation }: Props) {
 
   const cargarJugador = async () => {
     try {
-      const nombre = await AsyncStorage.getItem("jugador");
+      const perfil = await obtenerPerfil();
 
-      console.log("Jugador actual:", nombre);
+      console.log("PERFIL:", perfil);
 
-      if (nombre) {
-        setJugador(nombre);
+      if (perfil) {
+        setJugador(perfil.nick);
       }
     } catch (error) {
-      console.log("Error cargando jugador:", error);
+      console.log("Error cargando perfil", error);
     }
   };
 
@@ -78,15 +79,11 @@ export default function HomeScreen({ navigation }: Props) {
   // Animación insectos
 
   useEffect(() => {
-    Animated.spring(
-      scale,
+    Animated.spring(scale, {
+      toValue: 1,
 
-      {
-        toValue: 1,
-
-        useNativeDriver: true,
-      },
-    ).start();
+      useNativeDriver: true,
+    }).start();
   }, [gameInsects]);
 
   // Temporizador
@@ -97,17 +94,31 @@ export default function HomeScreen({ navigation }: Props) {
     if (timeLeft <= 0) {
       setGameOver(true);
 
-      guardarPuntaje(jugador, score);
+      const finalizarJuego = async () => {
+        if (jugador !== "") {
+          await guardarPuntaje(
+            jugador,
 
-      AsyncStorage.setItem("ultimoPuntaje", score.toString());
+            score,
+          );
+        }
 
-      Alert.alert(
-        "Juego terminado",
+        await AsyncStorage.setItem(
+          "ultimoPuntaje",
 
-        `Jugador: ${jugador}
+          score.toString(),
+        );
+
+        Alert.alert(
+          "Juego terminado",
+
+          `Jugador: ${jugador}
 Puntaje: ${score}
 Capturas: ${capturas}`,
-      );
+        );
+      };
+
+      finalizarJuego();
 
       return;
     }
@@ -117,9 +128,9 @@ Capturas: ${capturas}`,
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, gameOver]);
+  }, [timeLeft, gameOver, jugador]);
 
-  // Crear insectos
+  // Crear insectos iniciales
 
   const crearInsectos = () => {
     return insects.map((item) => ({
@@ -165,7 +176,7 @@ Capturas: ${capturas}`,
     setGameInsects((prev) => [...prev, nuevo]);
   };
 
-  // Atrapar insecto
+  // Capturar insecto
 
   const atraparInsecto = (insect: GameInsect) => {
     if (gameOver) return;
@@ -173,11 +184,15 @@ Capturas: ${capturas}`,
     setScore((prev) => prev + insect.puntos);
 
     setCapturas((prev) => {
-      const nuevasCapturas = prev + 1;
+      const nuevas = prev + 1;
 
-      AsyncStorage.setItem("capturas", nuevasCapturas.toString());
+      AsyncStorage.setItem(
+        "capturas",
 
-      return nuevasCapturas;
+        nuevas.toString(),
+      );
+
+      return nuevas;
     });
 
     setGameInsects((prev) => prev.filter((item) => item.id !== insect.id));

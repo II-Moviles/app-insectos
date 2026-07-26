@@ -1,9 +1,12 @@
 import React from "react";
 
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import ProfileScreen from "../screens/ProfileScreen";
+
 import HomeScreen from "../screens/HomeScreen";
+
 import ScoreScreen from "../screens/ScoreScreen";
+
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -25,18 +28,14 @@ export default function BottomTabs() {
           headerShown: false,
         }}
       />
+
+      <Tab.Screen
+        name="Perfil"
+        component={ProfileScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Tab.Navigator>
   );
 }
-
-<Tab.Screen
-
-name="Perfil"
-
-component={ProfileScreen}
-
-options={{
-headerShown:false
-}}
-
-/>

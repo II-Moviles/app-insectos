@@ -1,74 +1,81 @@
 import { supabase } from "./supabaseClient";
 
-
 export async function guardarPuntaje(
   usuario: string,
-  puntaje: number
+  puntaje: number,
+  capturas: number,
 ) {
-
   const { data, error } = await supabase
     .from("puntajes")
     .insert([
       {
         usuario: usuario,
         puntaje: puntaje,
-        fecha: new Date()
-      }
+        capturas: capturas,
+        partidas: 1,
+        fecha: new Date(),
+      },
     ])
     .select();
 
-
   if (error) {
-
-    console.log(
-      "ERROR SUPABASE:",
-      error
-    );
+    console.log("ERROR SUPABASE:", error);
 
     return false;
   }
 
-
-  console.log(
-    "GUARDADO CORRECTAMENTE:",
-    data
-  );
-
+  console.log("GUARDADO CORRECTAMENTE:", data);
 
   return true;
 }
 
-export const obtenerPuntajes = async()=>{
+export const obtenerPuntajes = async () => {
+  const { data, error } = await supabase
+    .from("puntajes")
+    .select("*")
+    .order("puntaje", {
+      ascending: false,
+    })
+    .limit(10);
 
- const {data,error}=await supabase
+  if (error) {
+    console.log("ERROR OBTENIENDO PUNTAJES:", error);
 
- .from("puntajes")
-
- .select("*")
-
- .order(
-  "puntaje",
-  {
-   ascending:false
+    return [];
   }
- )
 
- .limit(10);
+  return data || [];
+};
 
+export const obtenerEstadisticasJugador = async (usuario: string) => {
+  const { data, error } = await supabase
+    .from("puntajes")
+    .select("*")
+    .eq("usuario", usuario);
 
+  if (error) {
+    console.log("ERROR ESTADISTICAS:", error);
 
- if(error){
+    return {
+      partidas: 0,
 
-  console.log(
-   "ERROR OBTENIENDO PUNTAJES:",
-   error
-  );
+      mejorPuntaje: 0,
+    };
+  }
 
-  return [];
+  if (!data || data.length === 0) {
+    return {
+      partidas: 0,
 
- }
+      mejorPuntaje: 0,
+    };
+  }
 
+  const mejor = Math.max(...data.map((item) => item.puntaje));
 
- return data || [];
+  return {
+    partidas: data.length,
 
+    mejorPuntaje: mejor,
+  };
 };

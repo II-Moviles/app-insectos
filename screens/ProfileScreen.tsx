@@ -1,66 +1,130 @@
 import React, { useEffect, useState } from "react";
 
-import { View, Text, Image } from "react-native";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 
 import { StyleSheet } from "react-native";
 
-export default function ProfileScreen() {
-  const [nombre, setNombre] = useState("Jugador");
+import { obtenerPerfil, cerrarSesion } from "../Services/auth";
 
-  const [puntaje, setPuntaje] = useState("0");
+import { obtenerEstadisticasJugador } from "../supabase/puntajes";
 
-  const [capturas, setCapturas] = useState("0");
+interface Perfil {
+  nick: string;
+
+  edad: number;
+
+  email: string;
+
+  foto: string;
+}
+
+interface Estadisticas {
+  partidas: number;
+
+  mejorPuntaje: number;
+}
+
+export default function ProfileScreen({ navigation }: any) {
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+
+  const [estadisticas, setEstadisticas] = useState<Estadisticas>({
+    partidas: 0,
+
+    mejorPuntaje: 0,
+  });
 
   useEffect(() => {
-    cargarDatos();
+    cargarPerfil();
   }, []);
 
-  const cargarDatos = async () => {
-    const usuario = await AsyncStorage.getItem("jugador");
+  const cargarPerfil = async () => {
+    const datos = await obtenerPerfil();
 
-    const puntos = await AsyncStorage.getItem("ultimoPuntaje");
+    if (datos) {
+      setPerfil(datos);
 
-    const totalCapturas = await AsyncStorage.getItem("capturas");
+      const stats = await obtenerEstadisticasJugador(datos.nick);
 
-    if (usuario) {
-      setNombre(usuario);
+      setEstadisticas(stats);
     }
+  };
 
-    if (puntos) {
-      setPuntaje(puntos);
-    }
+  const salir = async () => {
+    Alert.alert(
+      "Cerrar sesión",
 
-    if (totalCapturas) {
-      setCapturas(totalCapturas);
-    }
+      "¿Desea salir de la cuenta?",
+
+      [
+        {
+          text: "Cancelar",
+
+          style: "cancel",
+        },
+
+        {
+          text: "Salir",
+
+          onPress: async () => {
+            await cerrarSesion();
+
+            navigation.replace("Login");
+          },
+        },
+      ],
+    );
   };
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{
-          uri: "https://i.pravatar.cc/300",
-        }}
-        style={styles.avatar}
-      />
+      <Text style={styles.title}>Perfil del Jugador</Text>
 
-      <Text style={styles.nombre}>{nombre}</Text>
+      {perfil ? (
+        <>
+          {perfil.foto !== "" ? (
+            <Image
+              source={{
+                uri: perfil.foto,
+              }}
+              style={styles.image}
+            />
+          ) : (
+            <View style={styles.noImage}>
+              <Text style={styles.noImageText}>Sin foto</Text>
+            </View>
+          )}
 
-      <View style={styles.card}>
-        <Text style={styles.texto}>
-          Puntaje máximo:
-          {puntaje}
-        </Text>
+          <View style={styles.card}>
+            <Text style={styles.text}>👤 Nick:</Text>
 
-        <Text style={styles.texto}>
-          Insectos capturados:
-          {capturas}
-        </Text>
+            <Text style={styles.value}>{perfil.nick}</Text>
 
-        <Text style={styles.texto}>Nivel: Cazador Novato</Text>
-      </View>
+            <Text style={styles.text}>🎂 Edad:</Text>
+
+            <Text style={styles.value}>{perfil.edad} años</Text>
+
+            <Text style={styles.text}>📧 Correo:</Text>
+
+            <Text style={styles.value}>{perfil.email}</Text>
+
+            <Text style={styles.separator}></Text>
+
+            <Text style={styles.text}>🎮 Partidas jugadas:</Text>
+
+            <Text style={styles.value}>{estadisticas.partidas}</Text>
+
+            <Text style={styles.text}>🏆 Mejor puntaje:</Text>
+
+            <Text style={styles.value}>{estadisticas.mejorPuntaje}</Text>
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={salir}>
+            <Text style={styles.buttonText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <Text style={styles.loading}>Cargando perfil...</Text>
+      )}
     </View>
   );
 }
@@ -73,22 +137,12 @@ const styles = StyleSheet.create({
 
     alignItems: "center",
 
+    justifyContent: "center",
+
     padding: 30,
   },
 
-  avatar: {
-    width: 150,
-
-    height: 150,
-
-    borderRadius: 75,
-
-    marginTop: 40,
-
-    marginBottom: 20,
-  },
-
-  nombre: {
+  title: {
     color: "#FFFFFF",
 
     fontSize: 30,
@@ -98,23 +152,95 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
 
-  card: {
-    width: "100%",
+  image: {
+    width: 150,
 
-    backgroundColor: "#FFFFFF",
+    height: 150,
 
-    borderRadius: 15,
+    borderRadius: 75,
 
-    padding: 20,
+    marginBottom: 20,
   },
 
-  texto: {
-    fontSize: 20,
+  noImage: {
+    width: 150,
 
-    marginBottom: 15,
+    height: 150,
 
-    color: "#333",
+    borderRadius: 75,
+
+    backgroundColor: "#555",
+
+    justifyContent: "center",
+
+    alignItems: "center",
+
+    marginBottom: 20,
+  },
+
+  noImageText: {
+    color: "#FFFFFF",
+
+    fontSize: 18,
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+
+    width: "100%",
+
+    padding: 20,
+
+    borderRadius: 15,
+  },
+
+  text: {
+    fontSize: 17,
 
     fontWeight: "bold",
+
+    marginTop: 10,
+  },
+
+  value: {
+    fontSize: 18,
+
+    marginBottom: 5,
+  },
+
+  separator: {
+    height: 1,
+
+    backgroundColor: "#CCCCCC",
+
+    marginVertical: 15,
+  },
+
+  button: {
+    backgroundColor: "#E74C3C",
+
+    width: "100%",
+
+    padding: 15,
+
+    borderRadius: 10,
+
+    alignItems: "center",
+
+    marginTop: 30,
+  },
+
+  buttonText: {
+    color: "#FFFFFF",
+
+    fontSize: 18,
+
+    fontWeight: "bold",
+  },
+
+  loading: {
+    color: "#FFFFFF",
+
+    fontSize: 18,
   },
 });
